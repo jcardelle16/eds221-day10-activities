@@ -1,0 +1,84 @@
+---
+title: "EDS 221: Day 10 Activity"
+author: "Josephine Cardelle"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+library(here)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+```
+
+# Read in Data
+```{r}
+ice_duration <- read_csv(here("data", "ntl33_v7.csv"), na = c(-999, ""))
+
+trends_ice <- read_csv(here("data", "ntl20_v6.csv"))
+```
+
+# Create a visualization
+```{r}
+duration_plot <- ggplot(ice_duration, aes(x = lakeid,y = ice_duration)) +
+  geom_boxplot() +
+  geom_point()
+```
+
+```{r}
+mean_coverage_madison <- ice_duration %>% group_by(year4) %>%
+  summarize(mean_cover_duration = mean(ice_duration, na.rm = TRUE))
+```
+
+```{r}
+ggplot(mean_coverage_madison, aes(x = year4, y = mean_cover_duration)) +
+  geom_line() +
+  labs(x = "Year", y = "Mean Ice Coverage Duration(days)", title = "Ice Coverage By Year")
+
+#This graph shows an overall downwards trench in mean ice coverage duration
+```
+
+#Winter Months Mean Air Temp
+```{r}
+mean_air_temp_winter <- trends_ice %>% filter(month %in% c(12, 1, 2)) %>%
+  group_by(year4) %>%
+  summarize(mean_air_temp = mean(ave_air_temp_adjusted, na.rm = TRUE)) 
+```
+
+#Exploratory Graph
+```{r}
+ggplot(mean_air_temp_winter, aes (x = year4, y = mean_air_temp)) +
+  geom_line()+
+  labs(x = "Year", y = "Mean Air Temperature\n(degrees farenheit)")
+```
+
+#Join
+```{r}
+temps_coverage_winter <- full_join(mean_air_temp_winter, mean_coverage_madison)
+```
+
+#Exploratory Scatterplot
+```{r}
+ggplot(temps_coverage_winter, aes(mean_air_temp, mean_cover_duration)) +
+  geom_point()
+ 
+#As the air temperature in winter months gets warmer the mean coverage decreases
+```
+
+#Data since 1970
+```{r}
+recent_data <- ice_duration %>%
+  filter(year4 >= 1970)
+  
+recent_data <- recent_data %>%
+ mutate(ice_off_date = lubridate::ymd(ice_off)) %>%
+  mutate(ice_off_day = lubridate::yday(ice_off))
+
+ggplot(recent_data, aes(x = year4, y = ice_off_day)) +
+  geom_point()
+#overall there is a trend that the ice is melting sooner in the year as time passes
+```
+
